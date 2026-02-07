@@ -1,0 +1,250 @@
+# Flutter AI Development Rules
+
+## AI行動原則
+
+### 基本姿勢
+- タスクは最初から最後まで自律的に完遂する。途中で止まらない
+- 実装前に必ずプランを立てる。影響範囲・既存パターンとの整合性を確認してから着手する
+- 不明点は合理的に推測して進め、推測箇所はコードコメントで明記する
+- 指示されていない変更は行わない。必要と判断した場合はコメントで提案に留める
+- 同じミスを繰り返さない。修正した問題のパターンを記憶する
+
+### タスク実行フロー
+1. 分析: 指示内容を要約し、影響するファイル・モジュールを特定する
+2. 重複チェック: 同名・類似の機能、コンポーネントが既にないか確認する
+3. 実装: 下記の規約に従い、既存コードのパターンに合わせて実装する
+4. 検証: dart analyze と dart format . を実行しエラー0件を確認する
+5. テスト: 実装に対応するテストを書き、全テストがパスすることを確認する
+6. 報告: 変更ファイル一覧・実装内容・注意点を簡潔に報告する
+
+### エラー発生時
+- 原因を特定し、自力で修正を試みる
+- 修正後は再度検証を行う
+- 3回試行しても解決しない場合のみ、状況と試行内容を報告して相談する
+
+### やってはいけないこと
+- テストなしでコードを提出する
+- 動作確認せずに完了報告する
+- 既存のアーキテクチャパターンを無断で変更する
+- UI/UXデザインを無断で変更する
+
+---
+
+## プロジェクト構成
+
+```
+lib/
+├── main.dart
+├── app.dart
+├── core/
+│   ├── constants/          定数・APIエンドポイント
+│   ├── errors/             例外型・Failureクラス
+│   ├── extensions/         Dart拡張メソッド
+│   ├── network/           HTTPクライアント
+│   ├── theme/              ThemeData・色・テキストスタイル
+│   ├── utils/              ヘルパー（巨大utilsファイル禁止）
+│   └── di/                 依存性注入
+├── features/
+│   └── feature_name/
+│       ├── data/
+│       │   ├── datasources/ リモート/ローカルデータソース
+│       │   ├── models/      DTO（json_serializable対象）
+│       │   └── repositories/ リポジトリ実装
+│       ├── domain/
+│       │   ├── entities/    ビジネスエンティティ（純粋Dart）
+│       │   ├── repositories/ 抽象リポジトリ
+│       │   └── usecases/   ユースケース
+│       └── presentation/
+│           ├── screens/     画面
+│           ├── widgets/     Feature固有ウィジェット
+│           └── controllers/ ViewModel/Controller
+├── shared/
+│   ├── widgets/            横断的共通ウィジェット
+│   ├── models/             横断的共通モデル
+│   └── services/           共通サービス
+└── routes/
+    └── app_router.dart     go_routerルート定義
+```
+
+### 配置ルール
+- Feature内で完結するコードはFeature内に置く
+- Feature間で共有するものだけ shared/ に配置する
+- core/ にビジネスロジックを置かない
+- 新規ファイルは既存の構成パターンに従って配置する
+
+### レイヤー間の依存方向
+presentation → domain ← data
+- domain は他のどの層にも依存しない（純粋Dart）
+- data は domain のインターフェースを実装する
+- presentation は domain のユースケースを参照する
+
+---
+
+## 命名規則
+
+| 対象 | 規則 | 例 |
+|------|------|-----|
+| ファイル | snake_case | product_list_screen.dart |
+| クラス・enum | PascalCase | ProductListScreen |
+| 変数・関数 | camelCase | fetchProducts() |
+| プライベート | アンダースコアプレフィックス | _internalState |
+| bool | is/has/can で開始 | isLoading, hasError |
+| 関数 | 動詞で開始 | saveUser(), deleteItem() |
+| コールバック | on プレフィックス | onPressed, onItemTapped |
+| 定数 | static const + camelCase | static const maxRetryCount = 3 |
+
+- マジックナンバー・マジックストリング禁止。定数として定義する
+- 略語は避ける（API, URL 等の標準略語は除く）
+
+---
+
+## コーディング規約
+
+### Dart
+- すべての変数・関数に型を明示する。dynamic 禁止
+- ! 演算子は最小限に。使う場合は理由をコメントする
+- late は初期化が保証される場合のみ使用する
+- final ローカル変数、const コンストラクタを優先する
+- 早期リターンでネストを浅く保つ
+- 関数は20行以内・単一責務
+- 3引数を超えたら名前付きパラメータを使う
+- print() 禁止。log() from dart:developer を使う
+
+### ウィジェット
+- const コンストラクタを可能な限り使用する
+- StatelessWidget をデフォルトとする
+- ウィジェットツリーが深くなったら子ウィジェットに分割する
+- build() 内にロジックを書かない。Controller/ViewModelに分離する
+- BuildContext を非同期ギャップ越しに使わない（mounted チェック必須）
+- リスト表示には ListView.builder を使う
+- 重い計算は compute() でIsolateに分離する
+
+### Good / Bad パターン
+Good: const、型明示、単一責務
+Bad: constなし、dynamic、ハードコード色（Color(0xFF...) 等）
+
+---
+
+## 状態管理
+
+デフォルトではFlutter組み込みを使用する。サードパーティは明示的に指定された場合のみ使う。
+- 単一の値: ValueNotifier + ValueListenableBuilder
+- 複雑な状態: ChangeNotifier + ListenableBuilder
+- 非同期単発: Future + FutureBuilder
+- 非同期ストリーム: Stream + StreamBuilder
+- 全体設計: MVVM（ViewModel = ChangeNotifier）
+
+Riverpod使用時（明示指定された場合）: ref.watch（build内）、ref.read（イベントハンドラ内のみ）、AsyncValue で loading/error/data を網羅、autoDispose で自動破棄。
+
+---
+
+## エラーハンドリング
+
+- ドメイン層では Result パターンでエラーを表現する
+- 例外は core/errors/ に定義した型付きエラーに変換する
+- グローバルエラーハンドラで未捕捉例外をキャッチする
+
+Result パターン例:
+- sealed class Result<T>
+- class Success<T> extends Result<T> { final T data; }
+- class Failure<T> extends Result<T> { final AppException error; }
+
+---
+
+## テスト
+
+- すべてのpublicメソッドにユニットテストを書く
+- テストファイルは test/ に対象と同じ階層構造で配置する
+- Arrange-Act-Assert パターンを使う
+- Unit: UseCase, Repository, Model → flutter_test, mockito
+- Widget: 個別Widget, Screen → flutter_test
+- Integration: 画面遷移, E2E → integration_test
+- テスト変数の命名: mockXxx / inputXxx / expectedXxx / actualXxx
+
+---
+
+## テーマとUI
+
+- ThemeData を core/theme/ に一元管理する
+- ColorScheme.fromSeed() でカラーパレットを生成する
+- ライト/ダークテーマの両方をサポートする
+- ハードコードされた色・サイズ禁止。Theme.of(context) 経由で参照する
+- ネットワーク画像には loadingBuilder と errorBuilder を設定する
+- アセットパスはすべて pubspec.yaml に宣言する
+
+---
+
+## ナビゲーション
+
+- go_router で宣言的ルーティングを実装する
+- 認証フローは redirect で制御する
+- ルート定義は routes/app_router.dart に集約する
+- ダイアログ等の一時画面には Navigator を使用する
+
+---
+
+## データ層
+
+- JSON処理は json_serializable + json_annotation を使用する
+- fieldRename: FieldRename.snake でsnake_case変換する
+- コード生成後は dart run build_runner build --delete-conflicting-outputs を実行する
+- APIのベースURL・エンドポイントは core/constants/ に定数定義する
+
+---
+
+## セキュリティ
+
+- APIキー・シークレットをソースコードにハードコードしない
+- 環境変数は --dart-define または .env + flutter_dotenv で管理する
+- .env は .gitignore に追加する
+- ユーザー入力は必ずバリデーションする
+
+---
+
+## パフォーマンス
+
+- const ウィジェットで不要なリビルドを防ぐ
+- RepaintBoundary で再描画範囲を限定する
+- 大きなリストは ListView.builder で遅延構築する
+- 画像キャッシュには cached_network_image を使用する
+- 不要な setState を避け、影響範囲を最小化する
+
+---
+
+## ドキュメンテーション
+
+- publicなクラス・メソッドには /// ドキュメントコメントを書く
+- 複雑なロジックには「なぜ」そうしたかのコメントを残す
+- TODO: // TODO(name): 説明 - 日付
+
+---
+
+## アクセシビリティ
+
+- Semantics ウィジェットでスクリーンリーダー対応する
+- タップ領域は最低 48x48 dp を確保する
+- 色のみで情報を伝達しない
+- 画像には semanticLabel を設定する
+
+---
+
+## Lint設定
+
+analysis_options.yaml に以下を設定:
+- include: package:flutter_lints/flutter.yaml
+- linter rules: always_declare_return_types, avoid_dynamic_calls, prefer_const_constructors, prefer_final_locals, prefer_final_in_for_each, unawaited_futures, sort_pub_dependencies
+- analyzer errors: missing_return: error, dead_code: warning
+- exclude: "/*.g.dart", "/*.freezed.dart"
+
+---
+
+## コード提出前チェックリスト
+
+- dart analyze でエラー・警告0件
+- dart format . でフォーマット済み
+- 型がすべて明示されている
+- 対応するテストが書かれ、全パスする
+- 命名規則に一貫性がある
+- マジックナンバー・ハードコード文字列がない
+- publicAPIにドキュメントコメントがある
+- 不要なimportがない

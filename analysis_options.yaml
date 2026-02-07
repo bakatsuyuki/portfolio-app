@@ -1,0 +1,19 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    dead_code: warning
+    included_file_warning: ignore
+    missing_return: error
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    prefer_const_constructors: true
+    prefer_final_locals: true
+    prefer_final_in_for_each: true
+    unawaited_futures: true
