@@ -4,17 +4,25 @@
 
 ### 基本姿勢
 - タスクは最初から最後まで自律的に完遂する。途中で止まらない
+- **TDD で実装する**。テストを先に書き、そのテストが通るように実装する。
 - 実装前に必ずプランを立てる。影響範囲・既存パターンとの整合性を確認してから着手する
 - 不明点は合理的に推測して進め、推測箇所はコードコメントで明記する
 - 指示されていない変更は行わない。必要と判断した場合はコメントで提案に留める
 - 同じミスを繰り返さない。修正した問題のパターンを記憶する
 
+### TDD（テスト駆動開発）
+- **実装は TDD で行う**。Red → Green → Refactor の順で進める。
+1. **Red**: 仕様・インターフェースに合わせてテストを先に書く。この時点では失敗してよい。
+2. **Green**: テストが通る最小限の実装を行う。
+3. **Refactor**: テストを維持したままリファクタする。検証（dart analyze / dart format）を忘れずに。
+- 新規の public メソッド・ユースケース・リポジトリ・モデルのパースなどは、先にテストを書いてから実装する。
+
 ### タスク実行フロー
 1. 分析: 指示内容を要約し、影響するファイル・モジュールを特定する
 2. 重複チェック: 同名・類似の機能、コンポーネントが既にないか確認する
-3. 実装: 下記の規約に従い、既存コードのパターンに合わせて実装する
-4. 検証: dart analyze と dart format . を実行しエラー0件を確認する
-5. テスト: 実装に対応するテストを書き、全テストがパスすることを確認する
+3. テスト: 追加・変更する振る舞いに対応するテストを先に書く（TDD）
+4. 実装: テストが通るように、下記の規約に従い既存パターンに合わせて実装する
+5. 検証: dart analyze と dart format . を実行しエラー0件を確認する
 6. 報告: 変更ファイル一覧・実装内容・注意点を簡潔に報告する
 
 ### エラー発生時
@@ -127,14 +135,12 @@ Bad: constなし、dynamic、ハードコード色（Color(0xFF...) 等）
 
 ## 状態管理
 
-デフォルトではFlutter組み込みを使用する。サードパーティは明示的に指定された場合のみ使う。
-- 単一の値: ValueNotifier + ValueListenableBuilder
-- 複雑な状態: ChangeNotifier + ListenableBuilder
-- 非同期単発: Future + FutureBuilder
-- 非同期ストリーム: Stream + StreamBuilder
-- 全体設計: MVVM（ViewModel = ChangeNotifier）
-
-Riverpod使用時（明示指定された場合）: ref.watch（build内）、ref.read（イベントハンドラ内のみ）、AsyncValue で loading/error/data を網羅、autoDispose で自動破棄。
+本プロジェクトでは **Riverpod** を使用する。テストしやすく、非同期状態（AsyncValue）の扱いが明確になる。
+- **build 内**: ref.watch で Provider を購読し、UI に反映する。
+- **イベントハンドラ内**: ref.read で Provider を参照する（ref.watch は使わない）。
+- **非同期**: AsyncValue で loading / error / data を網羅し、switch や when で分岐する。
+- **破棄**: 画面単位の状態は autoDispose で自動破棄する。
+- **Provider の配置**: feature の presentation または domain に近い層に定義。共通なら shared や core/di。
 
 ---
 
