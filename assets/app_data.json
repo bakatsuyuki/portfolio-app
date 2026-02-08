@@ -1,0 +1,24 @@
+{
+  "holdings": [
+    {"symbol": "AAPL", "quantity": "10.0", "price": "200.0", "currency": "USD", "value_usd": "2000.0", "value_jpy": "300000.0", "ratio": "50.0"},
+    {"symbol": "GOOG", "quantity": "5.0", "price": "150.0", "currency": "USD", "value_usd": "750.0", "value_jpy": "112500.0", "ratio": "25.0"},
+    {"symbol": "MSFT", "quantity": "5.0", "price": "250.0", "currency": "USD", "value_usd": "1250.0", "value_jpy": "187500.0", "ratio": "25.0"}
+  ],
+  "sectors": [
+    {"symbol": "AAPL", "name": "Apple Inc", "sector": "Information Technology", "industry": "Consumer Electronics"},
+    {"symbol": "GOOG", "name": "Alphabet Inc", "sector": "Communication Services", "industry": "Internet"},
+    {"symbol": "MSFT", "name": "Microsoft Corporation", "sector": "Information Technology", "industry": "Software"}
+  ],
+  "symbol_themes": [],
+  "themes_master": [],
+  "symbol_regions": [],
+  "risk_factors": [],
+  "theme_risks": [],
+  "sector_allocation": {
+    "Information Technology": {"ratio": 75.0},
+    "Communication Services": {"ratio": 25.0}
+  },
+  "theme_exposure": {},
+  "region_exposure": {"North America": 100.0, "Europe": 0.0, "Asia": 0.0, "China": 0.0, "Other": 0.0},
+  "risk_tolerance": {}
+}
